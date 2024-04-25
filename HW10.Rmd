@@ -1,0 +1,164 @@
+---
+title: "**HW 10 4/25/24**"
+author: "Emma Zhou - ez4493 - SDS 315"
+output:
+  html_document:
+  pdf_document:  
+    toc: true
+    toc_float: yes
+---
+
+```{r global_options, echo=FALSE}
+knitr::opts_chunk$set(fig.height=6, fig.width=8, warning=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60))
+```
+
+------------------------------------------------------------------------
+
+Link to GitHub: https://github.com/emmazhouu/SDS315_HW10
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(mosaic)
+library(knitr)
+library(effectsize)
+library(moderndive)
+```
+
+## **Q1**
+### **1) Question**
+```{r message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
+redlining <- read.csv('redlining.csv')
+
+redline_lm <- lm(policies ~ minority + fire + age + income, data = redlining)
+
+# get_regression_table(redline_lm, conf.level = 0.95, digits = 2)
+
+standardize_parameters(redline_lm)
+
+sd_unit_values <- tibble(
+  Predictor_Variable = c('policies', "minority", "fire", "age", "income"),
+  SD = c(
+    sd(redlining$policies),
+    sd(redlining$minority),
+    sd(redlining$fire),
+    sd(redlining$age),
+    sd(redlining$income)),
+    
+  'Units (per ZIP code)' = c(
+    'number policies/renewals per 100 units',
+    '% minority identifying residents',
+    'number per 100 units',
+    '% units built before WWII',
+    'median family income ($k)'
+  )
+  )
+```
+Is FAIR policy usage mainly associated with redlining in the insurance industry against the minority population? Or is it also associated with other factors of households in a ZIP code, like the fire-risk, age, and family income?
+
+### **2) Approach**
+A linear regression was fit to the data analyzing the association between the number of FAIR policies per 100 housing units in a ZIP code and the percentage of residents who identified as a minority. The regression also accounted for other predictors that could cause causal confusion in analyzing the relation between the minority population and number of FAIR policies, like the fire-risk, age, and family income of households in a ZIP code. Thus, certain predictors can be "held constant" in assessing each of the predictors' effect on the number of FAIR policies. However, since the predictor variables are measured in different and incomparable units, the coefficients were standardized to compare "typical" changes in the variables and to make them more interpretable. 
+
+### **3) Results**
+```{r message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
+# ggplot(redlining) + geom_point(aes(x = minority, y = policies)) + geom_smooth(aes(x = minority, y = policies), method='lm') + labs(title = 'FAIR Policies by Minority Percentage', y = 'FAIR Policies per 100 Units', x = 'Miniority Resident Percentage (%)') + geom_text(aes(label = paste("Slope:", round(coef(lm(policies ~ minority, data = redlining))[2], 2)), x = 13, y = 1.75))
+# 
+# ggplot(redlining) + geom_point(aes(x = fire, y = policies)) + geom_smooth(aes(x = fire, y = policies), method='lm') + labs(title = 'FAIR Policies by Number of Fires', y = 'FAIR Policies per 100 Units', x = 'Fires per 100 Units') + geom_text(aes(label = paste("Slope:", round(coef(lm(policies ~ fire, data = redlining))[2], 2)), x = 10, y = 2))
+# 
+# ggplot(redlining) + geom_point(aes(x = age, y = policies)) + geom_smooth(aes(x = age, y = policies), method='lm') + labs(title = 'FAIR Policies by Number of Older Houses', y = 'FAIR Policies per 100 Units', x = 'Percent Units Built Before WWII (%)') + geom_text(aes(label = paste("Slope:", round(coef(lm(policies ~ age, data = redlining))[2], 2)), x = 25, y = 1.5))
+# 
+# ggplot(redlining) + geom_point(aes(x = income, y = policies)) + geom_smooth(aes(x = income, y = policies), method='lm') + labs(title = 'FAIR Policies by Median Family Income', y = 'FAIR Policies per 100 Units', x = 'Median Family Income ($k)') + geom_text(aes(label = paste("Slope:", round(coef(lm(policies ~ income, data = redlining))[2], 2)), x = 18, y = 2))
+```
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+get_regression_table(redline_lm, conf.level = 0.95, digits = 2)
+standardize_parameters(redline_lm)
+sd_unit_values
+```
+Above are the standardized coefficient results of the linear regression, the standard deviation of each predictor variable, and their original units.
+
+The baseline number of FAIR policies per 100 units in a ZIP code is -2.60e-16 sds (standard deviations), which in this context is trivial, as there can not be a negative number of insurance policies.
+
+The main effect for the minority variable is 0.43 policy sds, meaning for every sd increase of minority residents in a ZIP code, its effect in isolation on the number of FAIR policies is a 0.43 policy sd increase.
+
+The main effect for the fire variable is 0.32 policy sds, meaning for every sd increase of fires per 100 houses in a ZIP code, its effect in isolation on the number of FAIR policies is a 0.32 policy sd increase.
+
+The main effect for the age variable is 0.18 policy sds, meaning for every 1 sd increase of units built before WWII in a ZIP code, its effect in isolation on the number of FAIR policies is a 0.18 policy sd increase.
+
+The main effect for the income variable is -0.07 policy sds, meaning for every increase of family median income in a ZIP code, its effect in isolation on the number of FAIR policies is a -0.07 policy sd decrease.
+
+### **4) Conclusion**
+The usage of FAIR policies in ZIP codes (as a way to measure access to the private insurance market) is more associated with redlining against prominently minority areas than other correlated variables like the fire-risk, age, and income of housing units. Thus, it is suggested that discrimination against minorities is restricting certain ZIP codes from accessing the private insurance market, along with other non-discriminatory factors like fire-risk and unit age that have a smaller influence. 
+
+Initially looking at the unstandardized coefficients, it is unclear which predictor variable has the most "per 1 unit" effect on FAIR policies since all the variables are measured in different units. The unstandardized coefficients of 0.01, 0.02, 0.01, -0.02 for the minority, fire, age, and income variables , respectively, suggest all 4 predictor variables affect the FAIR policies on a similar scale. However, after standardizing the measurement of "1 unit" for each of the variables to 1 standard deviation, it is evident that an increase in the minority variable has the largest effect on the number of FAIR policies, 0.43 sd of policies per 1 sd of the minority variable.
+
+When taking them in isolation, both the fire-risk and age variables also suggest positive correlation with the number of FAIR policies, with coefficients of 0.43 and 0.32 respectively. Their 95% confidence intervals also range in non-negative numbers, which supports this positive correlation, and this relationship makes sense as areas with a larger risk for fire or older houses pose more liability, which could deter private coverage. On the other hand, the income variable suggests a negative correlation with the number of FAIR policies, with an isolated coefficient of -0.07. However, the 95% confidence interval is wide and ranges from -0.41 to 0.27, which indicates uncertainty and an inconclusive result of whether higher income is associated with a decrease or increase in the number of FAIR policies.
+
+Overall, it is clear that the largest factor of a ZIP code that results in more FAIR policies (opposed to private coverage) is the prevalence of a minority population, while other non-discriminatory factors like fire-risk, age, and income do also affect FAIR policy usage.
+
+## **Q2**
+### **A)**
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+groceries <- read.csv('groceries.csv')
+
+avg_price_store <- groceries %>% group_by(Store) %>% summarize(avg_price = round(mean(Price), 2)) %>% arrange(desc(avg_price))
+
+avg_price_store$Store <- factor(avg_price_store$Store, levels = avg_price_store$Store)
+
+ggplot(avg_price_store) + geom_col(aes(y = avg_price, x = Store), fill = 'darkblue') + labs(title = 'Average Price by Store', y = 'Average Price of Products ($)') + coord_flip()
+```
+
+The graph above shows the average price of products sold at each store ($) by the store name. Whole Foods has the highest average price of products at ~ \$4.00, whereas Fiesta has the lowest average price of products at ~ \$2.00.
+
+### **B)**
+```{r message=FALSE, warning=FALSE, echo = FALSE}
+product_store <- groceries %>% group_by(Product) %>% summarize(num_stores = n())
+
+product_store$Product <- factor(product_store$Product, levels = product_store$Product[order(product_store$num_stores)])
+
+ggplot(product_store) + geom_col(aes(y = num_stores, x = Product), fill = 'darkblue') + coord_flip() + labs(title = 'Number of Stores Selling Each Product by Product', y = 'Number of Stores Selling Product')
+```
+
+The graph above shows the number of stores selling each product by product. Horizon 2% Milk Carton and Carton of eggs are sold in the most stores (16 stores), whereas products like Cinnamon Toast Crunch 1lb and El Milagros Tortilla Chips are sold in the least stores (4 stores).
+
+### **C)**
+```{r message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
+price_lm <- lm(Price ~ Product + Type, data = groceries)
+
+get_regression_table(price_lm, conf.level = 0.95, digits = 2)
+```
+Compared with ordinary grocery stores (like Albertsons, HEB, or Krogers), convenience stores charge somewhere between \$0.41 and $0.92 dollars more for the same product.
+
+### **D)**
+```{r message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
+price_store_lm <- lm(Price ~ Product + Store, data = groceries)
+get_regression_table(price_store_lm, conf.level = 0.95, digits = 2)
+```
+Kroger Fresh Fare and Walmart charge the lowest prices when comparing the same product.
+
+Whole Foods and Wheatsville Food Co-Op charge the highest prices when comparing the same product.
+
+### **E)**
+```{r message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
+get_regression_table(price_store_lm, conf.level = 0.95, digits = 2)
+```
+According to the linear regression results, Central Market charges a similar amount as HEB for the same product, which is $0.08 more than HEB. This was found by comparing the coefficients for Central Market (-0.57) and HEB (-0.65). For example, for a 12 Pack Coke, Central Market charges \$5.18 and HEB charges \$5.10. The confidence intervals are also similar, meaning the small difference in price for the two stores is robust and limited to the difference between the confidence intervals.
+
+This $0.08 difference between Central Market and HEB is relatively small compared to the price difference for the same product between different stores, like the \$1.35 difference between Walmart and Whole Foods, which are both part of the least/most expensive stores when comparing across the same products. However, the difference is also not the smallest between other two stores.
+
+### **F)**
+```{r message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
+groceries <- groceries %>% 
+  mutate(Income10K = Income %/% 10000)
+
+price_income_lm <- lm(Price ~ Product + Income10K, data = groceries)
+
+get_regression_table(price_income_lm, conf.level = 0.95)
+
+standardize_parameters(price_income_lm)
+```
+Based on the sign of the Income10K coefficient, consumers in poorer ZIP codes seem to pay more for the same product on average. For every 1 unit increase in Income10K (as ZIP codes are more wealthy), consumers pay $0.16 less for the same product.
+
+A one-standard deviation increase in the income of a ZIP code seems to be associated with a -0.03 standard-deviation change in the price that consumers in that ZIP code expect to pay for the same product.
+
